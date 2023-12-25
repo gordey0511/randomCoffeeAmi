@@ -4,6 +4,7 @@ import asyncio
 
 import aioschedule
 from aiogram import Dispatcher, Bot
+from aiogram.types import ChatPermissions
 from aiogram.utils import executor
 from aiogram.types import (
 	Message, ContentType, PreCheckoutQuery, CallbackQuery, InlineKeyboardMarkup,
@@ -72,17 +73,44 @@ async def trigger(question_id: db.ObjectId, user: dict):
 					))
 			)
 		)
-	elif question["type_answer"] == "payment":
-		await bot.send_invoice(
-			user["tid"],
-			title=cfg.PAID_TITLE,
-			description=cfg.PAID_DESCRIPTION,
-			provider_token=cfg.PAY_TOKEN,
-			currency='rub',
-			prices=[LabeledPrice(label=cfg.PAID_TITLE, amount=cfg.VALUE_PRICE * 100)],
-			payload='test-invoice-payload',
-		)
+	elif question.get("type_answer") == "finish":
+		user["state"] = question.get("next_question")
+		if user["last_question"] is not None:
+			user["last_question"] = user["state"]
+		await bot.send_message(user["tid"], question["text"])
+		db.update_user(user, cfg.bot_id)
+		await trigger(user["state"], user)
 
+		faculty = db.find_tag(user["data"]["6588c2e85e82ceb7672e69f7"])["name"]
+
+		print("FACULTY", faculty)
+
+		invite_link = ""
+
+		if faculty == "ПМИ":
+			invite_link = "https://t.me/+eMiWFt2yUyE2ZjAy"
+			print("IN AMI")
+		elif faculty == "ПИ":
+			invite_link = "https://t.me/+9cj7JWbWq3M4OThi"
+		elif faculty == "ПАД":
+			invite_link = "https://t.me/+zkAZAWRGhGc0ZWQy"
+		elif faculty == "ЭАД":
+			invite_link = "https://t.me/+_5xK2t9PYrBmNjdi"
+
+		inline_kb = InlineKeyboardMarkup().add(InlineKeyboardButton('Присоединиться к чату', url=invite_link))
+
+		print("INVITE LINK", invite_link)
+
+		await bot.send_message(user["tid"], text=f"Вступайте в единомышленников", reply_markup=inline_kb)
+
+
+@dp.message_handler(content_types=['new_chat_members'])
+async def on_user_joins(message: Message):
+    new_members = message.new_chat_members
+    for member in new_members:
+        if not member.is_bot:
+            welcome_text = f"Добро пожаловать, {member.full_name}!\n\n{db.get_profile(member.id, cfg.bot_id)}"
+            await message.reply(welcome_text,	parse_mode='html')
 
 @dp.message_handler(commands=['start'])
 async def start(message: Message):

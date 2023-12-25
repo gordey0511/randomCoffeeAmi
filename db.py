@@ -1,6 +1,9 @@
 import random
 import datetime
-from os import environ
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 from sys import stderr
 
 import certifi
@@ -8,10 +11,10 @@ import pymongo as pymongo
 from bson import ObjectId
 
 # TOKEN = environ["TOKEN"][:-1].strip()  # '5791033550:AAF_2TRXtRpZa1MqG7g-53pJTQItZVLbY3c'
-TOKEN = "6681679120:AAE9X_jHYVzv4t0n7MbZwVIt6qZE5Isp3Ps"
+TOKEN = os.getenv('BOT_TOKEN')
 print(TOKEN, file=stderr)
 client = pymongo.MongoClient(
-	"mongodb+srv://admin:X6TdCST1pqAEyboy@cluster0.fie8d2g.mongodb.net/?retryWrites=true&w=majority",
+	os.getenv('MONGODB_TOKEN'),
 	tlsCAFile=certifi.where())
 database = client["RandomCoffee"]
 users = database["users"]
